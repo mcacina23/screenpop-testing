@@ -504,6 +504,13 @@
 
         function initializeDashboard() {
             displayParameters();
+
+            // Auto-lookup customer if phone or customerId provided in URL
+            const phone = urlParams.get('phone');
+            const customerId = urlParams.get('customerId');
+            if (phone || customerId) {
+                lookupCustomerAuto(phone, customerId);
+            }
         }
 
         function displayParameters() {
@@ -542,6 +549,41 @@
             });
         }
 
+        async function lookupCustomerAuto(phone, customerId) {
+            // Auto-lookup from URL parameters (called on page load)
+            if (!phone && !customerId) {
+                return;
+            }
+
+            const resultDiv = document.getElementById('crmResult');
+            resultDiv.innerHTML = `<div class="crm-result loading"><span class="loader"></span>Looking up customer...</div>`;
+
+            try {
+                let params = {};
+                if (customerId) {
+                    params.customerId = customerId;
+                } else if (phone) {
+                    params.phone = phone;
+                }
+
+                const queryString = new URLSearchParams(params).toString();
+                const response = await fetch(`${API_BASE}/api/screenpop/customer?${queryString}`);
+
+                if (!response.ok) {
+                    throw new Error('Customer not found');
+                }
+
+                const data = await response.json();
+                displayCustomerData(data.customer);
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="crm-result error">
+                        <strong>❌ Auto-lookup Failed:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
         async function lookupCustomer() {
             const query = document.getElementById('crmQuery').value.trim();
             if (!query) {
@@ -571,46 +613,7 @@
                 }
 
                 const data = await response.json();
-                crmData = data.customer;
-
-                // Display customer info
-                const customer = data.customer;
-                resultDiv.innerHTML = `
-                    <div class="crm-result">
-                        <div class="customer-name">${customer.firstName} ${customer.lastName}</div>
-                        <div class="customer-id">${customer.customerId}</div>
-                        <div class="data-grid">
-                            <div class="data-item">
-                                <div class="data-label">Phone</div>
-                                <div class="data-value">${customer.phone}</div>
-                            </div>
-                            <div class="data-item">
-                                <div class="data-label">Email</div>
-                                <div class="data-value">${customer.email}</div>
-                            </div>
-                            <div class="data-item">
-                                <div class="data-label">Tier</div>
-                                <div class="data-value">${customer.tier}</div>
-                            </div>
-                            <div class="data-item">
-                                <div class="data-label">LTV</div>
-                                <div class="data-value">$${customer.lifetime_value.toLocaleString()}</div>
-                            </div>
-                            <div class="data-item">
-                                <div class="data-label">Active Claim</div>
-                                <div class="data-value">${customer.claimId || 'None'}</div>
-                            </div>
-                            <div class="data-item">
-                                <div class="data-label">Line of Business</div>
-                                <div class="data-value">${customer.lineOfBusiness}</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                // Update parameter display with CRM data
-                displayParameters();
-                showToast(`✓ Loaded ${customer.firstName} ${customer.lastName}`);
+                displayCustomerData(data.customer);
 
             } catch (error) {
                 resultDiv.innerHTML = `
@@ -623,6 +626,49 @@
                 `;
                 showToast('❌ CRM lookup failed');
             }
+        }
+
+        function displayCustomerData(customer) {
+            // Shared function to display customer info
+            const resultDiv = document.getElementById('crmResult');
+            crmData = customer;
+
+            resultDiv.innerHTML = `
+                <div class="crm-result">
+                    <div class="customer-name">${customer.firstName} ${customer.lastName}</div>
+                    <div class="customer-id">${customer.customerId}</div>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <div class="data-label">Phone</div>
+                            <div class="data-value">${customer.phone}</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Email</div>
+                            <div class="data-value">${customer.email}</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Tier</div>
+                            <div class="data-value">${customer.tier}</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">LTV</div>
+                            <div class="data-value">$${customer.lifetime_value.toLocaleString()}</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Active Claim</div>
+                            <div class="data-value">${customer.claimId || 'None'}</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Line of Business</div>
+                            <div class="data-value">${customer.lineOfBusiness}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Update parameter display with CRM data
+            displayParameters();
+            showToast(`✓ Loaded ${customer.firstName} ${customer.lastName}`);
         }
 
         function quickTest(phone) {
