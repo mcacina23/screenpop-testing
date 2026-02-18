@@ -1,11 +1,714 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=with-crm.html">
-    <title>Screen Pop Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Pop Debug Dashboard + CRM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0f172a;
+            --secondary: #1e293b;
+            --accent: #00d9ff;
+            --accent-warm: #ff6b35;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border: #334155;
+            --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+            --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--primary) 0%, #0a0f1a 100%);
+            color: var(--text-primary);
+            font-family: var(--font-display);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 2rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(0, 217, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 107, 53, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            margin-bottom: 2rem;
+            position: relative;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, var(--accent), var(--accent-warm));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .header-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 400;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.9rem;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            margin-top: 0.75rem;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .status-badge.active::before {
+            content: '●';
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1200px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            animation: slideUp 0.5s ease-out backwards;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            background: rgba(30, 41, 59, 0.6);
+            transform: translateY(-2px);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 217, 255, 0.1);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+
+        .crm-search {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .crm-input {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+
+        .crm-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.25rem;
+            background: linear-gradient(90deg, var(--accent), var(--accent-warm));
+            border: none;
+            color: var(--primary);
+            font-weight: 600;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 217, 255, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(0, 217, 255, 0.1);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        .btn-secondary:hover {
+            background: var(--accent);
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+        }
+
+        .crm-result {
+            background: rgba(15, 23, 42, 0.5);
+            border: 2px solid var(--success);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .crm-result.error {
+            border-color: var(--danger);
+        }
+
+        .crm-result.loading {
+            border-color: var(--warning);
+        }
+
+        .customer-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .customer-id {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            margin-bottom: 1rem;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .data-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            border-left: 3px solid var(--accent);
+        }
+
+        .data-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+
+        .data-value {
+            font-size: 0.95rem;
+            font-family: var(--font-mono);
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        .param-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 0.875rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .param-item:hover {
+            background: rgba(15, 23, 42, 0.8);
+            border-left: 3px solid var(--accent);
+        }
+
+        .param-key {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent);
+            min-width: 140px;
+        }
+
+        .param-value {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            flex: 1;
+            word-break: break-all;
+        }
+
+        .param-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border-radius: 0.25rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 0.5rem;
+        }
+
+        .param-badge.inferred {
+            background: rgba(249, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .section-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 1.25rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            animation: slideInUp 0.3s ease-out;
+            z-index: 1000;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loader {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(0, 217, 255, 0.3);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-    <p>Redirecting to dashboard...</p>
+    <div class="container">
+        <div class="header">
+            <h1 class="header-title">Screen Pop Dashboard + CRM Integration</h1>
+            <p class="header-subtitle">Test parameters with simulated CRM database lookups</p>
+            <div class="status-badge active">Real-time CRM integration testing</div>
+        </div>
+
+        <div class="two-column">
+            <!-- Left: CRM Lookup -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon">🔍</div>
+                        CRM Lookup
+                    </div>
+                </div>
+
+                <div class="crm-search">
+                    <input type="text" id="crmQuery" class="crm-input"
+                           placeholder="Phone, email, or customer ID...">
+                    <button class="btn" onclick="lookupCustomer()">Search</button>
+                    <button class="btn btn-secondary" onclick="loadTestData()">Test Data</button>
+                </div>
+
+                <div id="crmResult"></div>
+
+                <div class="section-title">Quick Test Links</div>
+                <div style="display: grid; gap: 0.5rem;">
+                    <button class="btn btn-secondary" style="justify-content: flex-start; width: 100%;"
+                            onclick="quickTest('+1(209) 816-5965')">
+                        John Doe: +1(209) 816-5965
+                    </button>
+                    <button class="btn btn-secondary" style="justify-content: flex-start; width: 100%;"
+                            onclick="quickTest('+1(555) 234-5678')">
+                        Sarah Smith: +1(555) 234-5678
+                    </button>
+                    <button class="btn btn-secondary" style="justify-content: flex-start; width: 100%;"
+                            onclick="quickTest('+1(415) 555-0123')">
+                        Michael Johnson: +1(415) 555-0123
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right: Parameter Display -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="card-icon">📊</div>
+                        All Parameters
+                    </div>
+                </div>
+                <div id="parametersDisplay"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Use Netlify Functions API (relative path works on Netlify, localhost for local testing)
+        const API_BASE = window.location.origin;
+
+        // All possible parameters with source
+        const PARAMETERS = {
+            'Screen Pop Triggers': [
+                { name: 'phone', source: 'real', description: 'Caller phone number from 8x8' },
+                { name: 'ani', source: 'real', description: 'Automatic Number Identification' },
+                { name: 'email', source: 'real', description: 'Customer email address' },
+                { name: 'customerId', source: 'real', description: 'Unique customer ID from 8x8' },
+                { name: 'interactionId', source: 'real', description: 'Unique interaction ID' },
+                { name: 'mediaType', source: 'real', description: 'phone, email, chat, voicemail' },
+                { name: 'direction', source: 'real', description: 'inbound or outbound' },
+            ],
+            'CRM Data (from lookup)': [
+                { name: 'firstName', source: 'inferred', description: 'From CRM lookup' },
+                { name: 'lastName', source: 'inferred', description: 'From CRM lookup' },
+                { name: 'accountNumber', source: 'inferred', description: 'From CRM lookup' },
+                { name: 'accountId', source: 'inferred', description: 'From CRM lookup' },
+                { name: 'tier', source: 'inferred', description: 'Customer tier from CRM' },
+                { name: 'lifetime_value', source: 'inferred', description: 'Customer LTV from CRM' },
+            ],
+            'Business Context (from lookup)': [
+                { name: 'claimId', source: 'inferred', description: 'Active claim from CRM' },
+                { name: 'claimStatus', source: 'inferred', description: 'Claim status from CRM' },
+                { name: 'orderId', source: 'inferred', description: 'Order from CRM' },
+                { name: 'caseId', source: 'inferred', description: 'Support case from CRM' },
+                { name: 'contractId', source: 'inferred', description: 'Contract from CRM' },
+                { name: 'productId', source: 'inferred', description: 'Product from CRM' },
+                { name: 'lineOfBusiness', source: 'inferred', description: 'LOB from CRM' },
+            ],
+            'Agent Context': [
+                { name: 'agentId', source: 'real', description: 'Agent ID from 8x8' },
+                { name: 'agentName', source: 'real', description: 'Agent name from 8x8' },
+                { name: 'queue', source: 'real', description: 'Queue name from 8x8' },
+                { name: 'team', source: 'real', description: 'Team from 8x8' },
+            ],
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramMap = new Map(urlParams);
+        let crmData = null;
+
+        function initializeDashboard() {
+            displayParameters();
+
+            // Auto-lookup customer if phone or customerId provided in URL
+            const phone = urlParams.get('phone');
+            const customerId = urlParams.get('customerId');
+            if (phone || customerId) {
+                lookupCustomerAuto(phone, customerId);
+            }
+        }
+
+        function displayParameters() {
+            const display = document.getElementById('parametersDisplay');
+            display.innerHTML = '';
+
+            Object.entries(PARAMETERS).forEach(([section, params]) => {
+                const sectionDiv = document.createElement('div');
+
+                const title = document.createElement('div');
+                title.className = 'section-title';
+                title.textContent = section;
+                sectionDiv.appendChild(title);
+
+                params.forEach(param => {
+                    let value = paramMap.get(param.name);
+
+                    // Try to get from CRM data if available
+                    if (!value && crmData && crmData[param.name]) {
+                        value = crmData[param.name];
+                    }
+
+                    const item = document.createElement('div');
+                    item.className = 'param-item';
+
+                    const badge = `<span class="param-badge ${param.source}">${param.source}</span>`;
+
+                    item.innerHTML = `
+                        <div class="param-key">${param.name}${badge}</div>
+                        <div class="param-value">${value || '—'}</div>
+                    `;
+                    sectionDiv.appendChild(item);
+                });
+
+                display.appendChild(sectionDiv);
+            });
+        }
+
+        async function lookupCustomerAuto(phone, customerId) {
+            // Auto-lookup from URL parameters (called on page load)
+            if (!phone && !customerId) {
+                return;
+            }
+
+            const resultDiv = document.getElementById('crmResult');
+            resultDiv.innerHTML = `<div class="crm-result loading"><span class="loader"></span>Looking up customer...</div>`;
+
+            try {
+                let params = {};
+                if (customerId) {
+                    params.customerId = customerId;
+                } else if (phone) {
+                    params.phone = phone;
+                }
+
+                const queryString = new URLSearchParams(params).toString();
+                const response = await fetch(`${API_BASE}/api/screenpop/customer?${queryString}`);
+
+                if (!response.ok) {
+                    throw new Error('Customer not found');
+                }
+
+                const data = await response.json();
+                displayCustomerData(data.customer);
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="crm-result error">
+                        <strong>❌ Auto-lookup Failed:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function lookupCustomer() {
+            const query = document.getElementById('crmQuery').value.trim();
+            if (!query) {
+                showToast('❌ Enter phone, email, or customer ID');
+                return;
+            }
+
+            const resultDiv = document.getElementById('crmResult');
+            resultDiv.innerHTML = `<div class="crm-result loading"><span class="loader"></span>Looking up...</div>`;
+
+            try {
+                // Determine query type
+                let params = {};
+                if (query.includes('@')) {
+                    params.email = query;
+                } else if (query.startsWith('CUST')) {
+                    params.customerId = query;
+                } else {
+                    params.phone = query;
+                }
+
+                const queryString = new URLSearchParams(params).toString();
+                const response = await fetch(`${API_BASE}/api/screenpop/customer?${queryString}`);
+
+                if (!response.ok) {
+                    throw new Error('Customer not found');
+                }
+
+                const data = await response.json();
+                displayCustomerData(data.customer);
+
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="crm-result error">
+                        <strong>❌ Lookup Failed:</strong> ${error.message}
+                        <div style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-secondary);">
+                            Make sure your backend is running with CRM API at ${API_BASE}
+                        </div>
+                    </div>
+                `;
+                showToast('❌ CRM lookup failed');
+            }
+        }
+
+        function displayCustomerData(customer) {
+            // Shared function to display customer info
+            const resultDiv = document.getElementById('crmResult');
+            crmData = customer;
+
+            resultDiv.innerHTML = `
+                <div class="crm-result">
+                    <div class="customer-name">${customer.firstName} ${customer.lastName}</div>
+                    <div class="customer-id">${customer.customerId}</div>
+                    <div class="data-grid">
+                        <div class="data-item">
+                            <div class="data-label">Phone</div>
+                            <div class="data-value">${customer.phone}</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Email</div>
+                            <div class="data-value">${customer.email}</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Tier</div>
+                            <div class="data-value">${customer.tier}</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">LTV</div>
+                            <div class="data-value">$${customer.lifetime_value.toLocaleString()}</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Active Claim</div>
+                            <div class="data-value">${customer.claimId || 'None'}</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Line of Business</div>
+                            <div class="data-value">${customer.lineOfBusiness}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Update parameter display with CRM data
+            displayParameters();
+            showToast(`✓ Loaded ${customer.firstName} ${customer.lastName}`);
+        }
+
+        function quickTest(phone) {
+            document.getElementById('crmQuery').value = phone;
+            setTimeout(lookupCustomer, 100);
+        }
+
+        async function loadTestData() {
+            try {
+                const response = await fetch(`${API_BASE}/api/screenpop/test-data`);
+                const data = await response.json();
+
+                const resultDiv = document.getElementById('crmResult');
+                resultDiv.innerHTML = `
+                    <div class="crm-result" style="border-color: var(--warning);">
+                        <strong>📋 Test Data Available (${data.count} customers):</strong>
+                        <div style="margin-top: 0.75rem; font-size: 0.85rem;">
+                            Use quick test buttons above or search by phone/email
+                        </div>
+                    </div>
+                `;
+                showToast('✓ Test data loaded - use quick test buttons');
+            } catch (error) {
+                showToast('❌ Could not load test data. Backend may not be running.');
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideInUp 0.3s ease-out reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        initializeDashboard();
+    </script>
 </body>
 </html>
