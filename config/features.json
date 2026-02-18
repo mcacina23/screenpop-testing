@@ -1,0 +1,18 @@
+{
+  "screenpop_test_enabled": false,
+  "screenpop_test_api_only": true,
+  "screenpop_mock_data_only": true,
+  "screenpop_require_auth": true,
+  "screenpop_require_admin": true,
+  "screenpop_allowed_users": [
+    "admin@company.com",
+    "qa@company.com",
+    "developer@company.com"
+  ],
+  "screenpop_rate_limit": "100/hour",
+  "screenpop_log_all_queries": true,
+  "screenpop_environment": "test",
+  "screenpop_backend_port": 3002,
+  "screenpop_dashboard_url": "http://localhost:3002/screenpop-dashboard",
+  "notes": "Set screenpop_test_enabled to true to activate testing. This feature is for staging/testing only."
+}

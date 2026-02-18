@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Pop Debug Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0f172a;
+            --secondary: #1e293b;
+            --accent: #00d9ff;
+            --accent-warm: #ff6b35;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border: #334155;
+            --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+            --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--primary) 0%, #0a0f1a 100%);
+            color: var(--text-primary);
+            font-family: var(--font-display);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 2rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(0, 217, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 107, 53, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            margin-bottom: 3rem;
+            position: relative;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, var(--accent), var(--accent-warm));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .header-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .status-badge.active::before {
+            content: '●';
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            animation: slideUp 0.5s ease-out backwards;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            background: rgba(30, 41, 59, 0.6);
+            transform: translateY(-2px);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card:nth-child(1) { animation-delay: 0.05s; }
+        .card:nth-child(2) { animation-delay: 0.1s; }
+        .card:nth-child(3) { animation-delay: 0.15s; }
+        .card:nth-child(4) { animation-delay: 0.2s; }
+        .card:nth-child(n+5) { animation-delay: 0.25s; }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 217, 255, 0.1);
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+
+        .status-indicator {
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            background: var(--warning);
+        }
+
+        .status-indicator.present {
+            background: var(--success);
+        }
+
+        .status-indicator.empty {
+            background: var(--danger);
+        }
+
+        .parameter-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .parameter-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .param-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 0.875rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .param-item:hover {
+            background: rgba(15, 23, 42, 0.8);
+            border-left: 3px solid var(--accent);
+            padding-left: calc(1rem - 3px);
+        }
+
+        .param-item.empty {
+            opacity: 0.6;
+        }
+
+        .param-key {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--accent);
+            min-width: 150px;
+            word-break: break-all;
+        }
+
+        .param-value {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            flex: 1;
+            word-break: break-all;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            border-left: 2px solid var(--border);
+        }
+
+        .param-value.present {
+            border-left-color: var(--success);
+        }
+
+        .param-empty {
+            color: var(--text-secondary);
+            font-style: italic;
+            opacity: 0.7;
+        }
+
+        .copy-btn {
+            padding: 0.375rem 0.75rem;
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: var(--font-mono);
+        }
+
+        .copy-btn:hover {
+            background: var(--accent);
+            color: var(--primary);
+        }
+
+        .copy-btn.copied {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .summary-card {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            animation: slideUp 0.5s ease-out backwards;
+        }
+
+        .stat:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent), var(--accent-warm));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .full-url {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .url-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .url-display {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            background: rgba(15, 23, 42, 0.5);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            word-break: break-all;
+            border-left: 3px solid var(--accent);
+            line-height: 1.8;
+        }
+
+        .test-url {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .test-input {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+        }
+
+        .test-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.1);
+        }
+
+        .test-btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(90deg, var(--accent), var(--accent-warm));
+            border: none;
+            color: var(--primary);
+            font-weight: 600;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: var(--font-display);
+        }
+
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 217, 255, 0.2);
+        }
+
+        .test-btn:active {
+            transform: translateY(0);
+        }
+
+        .legend {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .legend-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            animation: slideInUp 0.3s ease-out;
+            z-index: 1000;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="header-title">Screen Pop Debug Dashboard</h1>
+            <p class="header-subtitle">Test & validate all query parameters from 8x8 integrations</p>
+            <div class="status-badge active">Real-time parameter monitoring</div>
+        </div>
+
+        <div class="summary-card">
+            <div class="stat" style="animation-delay: 0s;">
+                <div class="stat-value" id="totalParams">0</div>
+                <div class="stat-label">Total Parameters</div>
+            </div>
+            <div class="stat" style="animation-delay: 0.05s;">
+                <div class="stat-value" id="receivedParams">0</div>
+                <div class="stat-label">Received</div>
+            </div>
+            <div class="stat" style="animation-delay: 0.1s;">
+                <div class="stat-value" id="emptyParams">0</div>
+                <div class="stat-label">Missing</div>
+            </div>
+            <div class="stat" style="animation-delay: 0.15s;">
+                <div class="stat-value" id="receivedPercentage">0%</div>
+                <div class="stat-label">Completion</div>
+            </div>
+        </div>
+
+        <div class="grid" id="parametersGrid"></div>
+
+        <div class="full-url">
+            <div class="url-label">Current URL</div>
+            <div class="url-display" id="currentUrl"></div>
+            <button class="copy-btn" id="copyUrlBtn" style="margin-top: 1rem;">Copy URL</button>
+        </div>
+
+        <div class="full-url">
+            <div class="url-label">Test with Custom URL</div>
+            <div class="test-url">
+                <input type="text" id="testUrl" class="test-input" placeholder="Paste test URL or modify parameters...">
+                <button class="test-btn" onclick="loadTestUrl()">Load</button>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-title">Parameter Reference Guide</div>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: var(--success);"></div>
+                    <span>Parameter received with value</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: var(--danger);"></div>
+                    <span>Parameter missing or empty</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: var(--warning);"></div>
+                    <span>Expected from configuration</span>
+                </div>
+                <div class="legend-item">
+                    <span>💡 Click any parameter to copy value</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // All possible screen pop parameters
+        const PARAMETER_GROUPS = {
+            'Customer Information': [
+                { name: 'phone', description: 'Caller phone number (ANI)' },
+                { name: 'ani', description: 'Automatic Number Identification' },
+                { name: 'dnis', description: 'Dialed Number Identification' },
+                { name: 'email', description: 'Customer email address' },
+                { name: 'customerId', description: 'Unique customer ID' },
+                { name: 'accountNumber', description: 'Customer account number' },
+                { name: 'firstName', description: 'Customer first name' },
+                { name: 'lastName', description: 'Customer last name' },
+            ],
+            'Interaction Details': [
+                { name: 'interactionId', description: 'Unique interaction identifier' },
+                { name: 'interactionType', description: 'Type: call, email, chat' },
+                { name: 'mediaType', description: 'Media channel' },
+                { name: 'direction', description: 'Inbound or outbound' },
+                { name: 'callDuration', description: 'Duration in seconds' },
+                { name: 'timestamp', description: 'Interaction start time (Unix)' },
+                { name: 'startTime', description: 'Human-readable start time' },
+            ],
+            'Agent Information': [
+                { name: 'agentId', description: 'Unique agent identifier' },
+                { name: 'agentName', description: 'Agent first and last name' },
+                { name: 'agentEmail', description: 'Agent email address' },
+                { name: 'agentExtension', description: 'Agent phone extension' },
+                { name: 'team', description: 'Team or department name' },
+                { name: 'skillId', description: 'Primary skill identifier' },
+            ],
+            'Queue & Routing': [
+                { name: 'queue', description: 'Queue name/ID' },
+                { name: 'queueId', description: 'Unique queue identifier' },
+                { name: 'campaignId', description: 'Campaign ID (outbound)' },
+                { name: 'campaign', description: 'Campaign name (outbound)' },
+                { name: 'skillGroup', description: 'Skill group assigned' },
+                { name: 'priority', description: 'Call priority level' },
+            ],
+            'Business Context': [
+                { name: 'accountId', description: 'CRM account ID' },
+                { name: 'caseId', description: 'Support case number' },
+                { name: 'orderId', description: 'Order number' },
+                { name: 'claimId', description: 'Claim number' },
+                { name: 'contractId', description: 'Contract identifier' },
+                { name: 'productId', description: 'Product/service ID' },
+                { name: 'lineOfBusiness', description: 'LOB classification' },
+            ],
+            'System & Tenant': [
+                { name: 'tenantId', description: '8x8 tenant identifier' },
+                { name: 'tenant', description: 'Tenant name/domain' },
+                { name: 'environment', description: 'Production/staging/dev' },
+                { name: 'locale', description: 'Language/locale code' },
+                { name: 'timezone', description: 'Agent timezone' },
+                { name: 'sessionId', description: 'User session identifier' },
+            ],
+            'Additional Context': [
+                { name: 'referrer', description: 'Previous page/context' },
+                { name: 'notes', description: 'Interaction notes/comments' },
+                { name: 'tags', description: 'CSV tags or labels' },
+                { name: 'customField1', description: 'Custom field 1' },
+                { name: 'customField2', description: 'Custom field 2' },
+                { name: 'customField3', description: 'Custom field 3' },
+            ],
+        };
+
+        const params = new URLSearchParams(window.location.search);
+        const paramMap = new Map(params);
+
+        function initializeDashboard() {
+            renderParameters();
+            updateStats();
+            updateCurrentUrl();
+        }
+
+        function renderParameters() {
+            const grid = document.getElementById('parametersGrid');
+            grid.innerHTML = '';
+
+            Object.entries(PARAMETER_GROUPS).forEach(([groupName, params], groupIndex) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.animationDelay = `${0.05 + groupIndex * 0.05}s`;
+
+                const header = document.createElement('div');
+                header.className = 'card-header';
+                header.innerHTML = `
+                    <div class="card-title">
+                        <div class="card-icon">${groupIndex + 1}</div>
+                        ${groupName}
+                    </div>
+                    <div class="status-indicator"></div>
+                `;
+                card.appendChild(header);
+
+                const group = document.createElement('div');
+                group.className = 'parameter-group';
+
+                params.forEach(param => {
+                    const value = paramMap.get(param.name) || '';
+                    const hasValue = value && value.trim().length > 0;
+
+                    const item = document.createElement('div');
+                    item.className = `param-item ${!hasValue ? 'empty' : ''}`;
+                    item.title = `Click to copy: ${param.description}`;
+                    item.onclick = () => copyToClipboard(value || 'empty', param.name);
+
+                    item.innerHTML = `
+                        <div class="status-indicator ${hasValue ? 'present' : 'empty'}"></div>
+                        <div class="param-key">${param.name}</div>
+                        <div class="param-value ${hasValue ? 'present' : ''}">
+                            ${hasValue ? value : '<span class="param-empty">Not provided</span>'}
+                        </div>
+                        ${hasValue ? `<button class="copy-btn" onclick="event.stopPropagation(); copyToClipboard('${value}', '${param.name}')">Copy</button>` : ''}
+                    `;
+                    group.appendChild(item);
+                });
+
+                card.appendChild(group);
+                grid.appendChild(card);
+            });
+        }
+
+        function updateStats() {
+            let totalParams = 0;
+            let receivedParams = 0;
+
+            Object.values(PARAMETER_GROUPS).forEach(params => {
+                params.forEach(param => {
+                    totalParams++;
+                    const value = paramMap.get(param.name);
+                    if (value && value.trim().length > 0) {
+                        receivedParams++;
+                    }
+                });
+            });
+
+            const emptyParams = totalParams - receivedParams;
+            const percentage = totalParams > 0 ? Math.round((receivedParams / totalParams) * 100) : 0;
+
+            document.getElementById('totalParams').textContent = totalParams;
+            document.getElementById('receivedParams').textContent = receivedParams;
+            document.getElementById('emptyParams').textContent = emptyParams;
+            document.getElementById('receivedPercentage').textContent = `${percentage}%`;
+        }
+
+        function updateCurrentUrl() {
+            const url = window.location.href;
+            document.getElementById('currentUrl').textContent = url;
+            document.getElementById('testUrl').value = url;
+        }
+
+        function copyToClipboard(text, paramName) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`✓ ${paramName} copied to clipboard`);
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.animation = 'slideInUp 0.3s ease-out reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        function loadTestUrl() {
+            const url = document.getElementById('testUrl').value;
+            if (url) {
+                window.location.href = url;
+            }
+        }
+
+        document.getElementById('copyUrlBtn').addEventListener('click', () => {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('✓ Full URL copied to clipboard');
+            });
+        });
+
+        // Initialize on load
+        initializeDashboard();
+    </script>
+</body>
+</html>

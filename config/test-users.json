@@ -1,0 +1,43 @@
+{
+  "test_agents": [
+    {
+      "id": "AGENT-TEST-001",
+      "email": "agent-test-1@company.com",
+      "firstName": "Test",
+      "lastName": "Agent 1",
+      "role": "agent",
+      "queue": "SCREENPOP_TEST",
+      "status": "test"
+    },
+    {
+      "id": "AGENT-TEST-002",
+      "email": "agent-test-2@company.com",
+      "firstName": "Test",
+      "lastName": "Agent 2",
+      "role": "agent",
+      "queue": "SCREENPOP_TEST",
+      "status": "test"
+    },
+    {
+      "id": "AGENT-TEST-003",
+      "email": "agent-test-3@company.com",
+      "firstName": "Test",
+      "lastName": "Agent 3",
+      "role": "agent",
+      "queue": "SCREENPOP_TEST",
+      "status": "test"
+    }
+  ],
+  "qa_users": [
+    {
+      "id": "QA-USER-001",
+      "email": "qa@company.com",
+      "firstName": "QA",
+      "lastName": "Team",
+      "role": "qa",
+      "queue": null,
+      "status": "active"
+    }
+  ],
+  "notes": "These are test user accounts. Create these manually in 8x8 CM for testing."
+}
