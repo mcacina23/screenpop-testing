@@ -1,7 +1,7 @@
 [build]
-  command = "echo 'No build needed for static site'"
+  command = "echo 'Build complete'"
   functions = "netlify/functions"
-  publish = "frontend"
+  publish = "frontend/dashboards"
 
 [[redirects]]
   from = "/api/screenpop/customer"
