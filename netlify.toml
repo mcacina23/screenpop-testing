@@ -18,9 +18,8 @@
   to = "/.netlify/functions/health"
   status = 200
 
-# SPA fallback (if needed)
+# SPA fallback - serve index.html for all routes
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  conditions = { Role = ["Admin"] }
