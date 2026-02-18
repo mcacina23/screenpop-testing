@@ -1,0 +1,26 @@
+[build]
+  command = "echo 'No build needed for static site'"
+  functions = "netlify/functions"
+  publish = "frontend"
+
+[[redirects]]
+  from = "/api/screenpop/customer"
+  to = "/.netlify/functions/customer-lookup"
+  status = 200
+
+[[redirects]]
+  from = "/api/screenpop/test-data"
+  to = "/.netlify/functions/test-data"
+  status = 200
+
+[[redirects]]
+  from = "/health"
+  to = "/.netlify/functions/health"
+  status = 200
+
+# SPA fallback (if needed)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = { Role = ["Admin"] }

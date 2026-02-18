@@ -1,0 +1,30 @@
+{
+  "name": "screenpop-testing",
+  "version": "1.0.0",
+  "description": "Screen Pop Testing Framework for 8x8 Agent Workspace",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "PORT=3000 node backend/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "screenpop",
+    "8x8",
+    "agent-workspace",
+    "testing"
+  ],
+  "author": "Monica Cacina",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "jsonwebtoken": "^9.0.0",
+    "express-rate-limit": "^6.7.0"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  }
+}
